@@ -1,4 +1,5 @@
 import numpy as np
+import re
 
 class color:
     HEADER = '\033[95m'
@@ -147,6 +148,73 @@ def find_overlapping_sections(file_content):
     print(elf_pairs,len(file_content))
             
 
+def move_crate(stacks, start, end,number_of_crates_to_move):
+    bottom_position = len(stacks[start])-number_of_crates_to_move
+    stacks[end]    += stacks[start][bottom_position:]
+    stacks[start]   = stacks[start][:bottom_position]   
+    return stacks
+
+def print_stacks(stacks):
+    for stack in stacks:
+        print(stack,stacks[stack])
+
+def rearrange_crates(file_content):
+    stacks = {}
+    for idx,line in enumerate(file_content):
+        if line[:2] == " 1":
+            for stack in line.split("   "):
+                stacks[int(stack)] = ""
+            break
+    for line in reversed(file_content[:idx]):
+        
+        for stack in stacks:
+            pattern = re.compile(r"(\[(?P<Container>\w*)\])")
+            found_reg_string = re.finditer(pattern,line)
+
+            if found_reg_string is not None:
+                for match in found_reg_string:
+                    found_container = match.group().replace("[","").replace("]","")
+                    if match.span()[0] < stack*4-1 <= match.span()[1]:
+                        stacks[stack] += found_container
+        
+    print_stacks(stacks)
+    print()
+        
+
+    for line in file_content[idx+2:]:
+        pattern = re.compile(r"move (?P<number>\w*) from (?P<start>\w*) to (?P<end>\w*)")
+        number_of_crates_to_move = int(re.match(pattern,line).group("number"))
+        starting_stack = int(re.match(pattern,line).group("start"))
+        ending_stack = int(re.match(pattern,line).group("end"))
+        
+        stacks = move_crate(stacks,starting_stack,ending_stack,number_of_crates_to_move)
+        
+    
+    for stack in stacks:
+        print(stacks[stack][-1],end="")    
+    print()
+    print_stacks(stacks)
+
+def check_characters(characters:str)->bool:
+    
+    for i in characters:
+        if characters.count(i)>1:
+            return False
+    return True
+
+def find_start_marker(file_content:list,distinct_chars:int):
+    
+    for data_stream in file_content:
+        print(data_stream,end=": ")
+        idx = distinct_chars
+        while (idx <= len(data_stream)):
+            char = data_stream[idx-1]                                 
+            if check_characters(data_stream[idx-distinct_chars:idx]):
+                print(idx)
+                break
+
+            idx += 1
+
 
 def run1(file_content:list):
     elves = count_calories(file_content)
@@ -161,6 +229,12 @@ def run3(file_content:list):
 def run4(file_content:list):
     find_overlapping_sections(file_content)
 
+def run5(file_content:list):
+    rearrange_crates(file_content)
+
+def run6(file_content:list):
+    find_start_marker(file_content,14)
+
 if __name__ == "__main__":
     file_content = importFile("input.txt")
-    run4(file_content)
+    run6(file_content)
