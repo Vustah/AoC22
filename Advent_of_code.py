@@ -230,45 +230,93 @@ def find_start_marker(file_content: list, distinct_chars: int):
             idx += 1
 
 
-def organize_system(file_content: list):
+def print_system(structure: dict, offset=0):
+    for key in structure:
+        print(" " * offset, end="")
+        if isinstance(structure[key], dict):
+            print("-", key)
+            print_system(structure[key], offset + 2)
+        else:
+            print("-", key, structure[key])
+
+
+def place_item_in_dir(dir: dict, item_name: str, content) -> dict:
+    dir[item_name] = content
+    return dir
+
+
+def organize_system(file_content: list) -> dict:
     command_pattern = r"\$ (?P<command>\w+)( (?P<directory>\w*\/*\.*))*"
     dir_pattern = r"dir (?P<dir_name>\w+)"
-    file_pattern = r"(?P<file_size>\d*) (?P<file_name>\w*\.\w*)"
+    file_pattern = r"(?P<file_size>\d*) (?P<file_name>\w*\.*\w*)"
     structure = {}
     directory = {}
     file = {"name": "", "size": ""}
     current_dir_path = ""
     next_dir = ""
     for line in file_content:
+
         command_match = re.match(command_pattern, line)
         dir_match = re.match(dir_pattern, line)
         file_match = re.match(file_pattern, line)
         if command_match:
             if command_match.group("command") == "cd":
                 next_dir = command_match.group("directory")
-                print(line)
                 if next_dir == "..":
                     current_dir_path = "/".join(current_dir_path.split("/")[:-2]) + "/"
                 elif next_dir == "/":
                     current_dir_path = "/"
                 else:
                     current_dir_path += next_dir + "/"
-                print(current_dir_path)
 
             elif command_match.group("command") == "ls":
-                print(line)
+                a = 2
 
         elif dir_match:
+            dir_name = dir_match.group("dir_name")
+            path = current_dir_path.split("/")[:-1]
+            if len(path) == 2:
+                print_system(structure)
+                print(line, current_dir_path, path, path[-1], structure[path[-1]])
 
-            print(line)
+                structure[path[-1]] = place_item_in_dir(
+                    structure[path[-1]], dir_name, {}
+                )
+            elif len(path) == 3:
+                structure[path[-2]][path[-1]] = place_item_in_dir(
+                    structure[path[-2]][path[-1]], dir_name, {}
+                )
+            else:
+                structure = place_item_in_dir(structure, dir_name, {})
 
         elif file_match:
             file_name = file_match.group("file_name")
-            file_size = file_match.group("file_size")
-            structure[current_dir_path][file_name] = int(file_size)
+            file_size = int(file_match.group("file_size"))
+            path = current_dir_path.split("/")[:-1]
+            if len(path) == 2:
+                structure[path[-1]] = place_item_in_dir(
+                    structure[path[-1]], file_name, file_size
+                )
+            elif len(path) == 3:
+                structure[path[-2]][path[-1]] = place_item_in_dir(
+                    structure[path[-2]][path[-1]], file_name, file_size
+                )
+            else:
+                structure = place_item_in_dir(structure, file_name, file_size)
 
-            print(color.RED, line, color.END)
-    print(structure)
+    print_system(structure, 1)
+    return structure
+
+
+def print_sizes(structure: dict) -> int:
+    sum_size = 0
+    for key in structure:
+        if isinstance(structure[key], dict):
+            sum_size += print_sizes(structure[key])
+        else:
+            sum_size += structure[key]
+    print(sum_size)
+    return sum_size
 
 
 def run1(file_content: list):
@@ -297,7 +345,8 @@ def run6(file_content: list):
 
 
 def run7(file_content: list):
-    organize_system(file_content)
+    structure = organize_system(file_content)
+    print_sizes(structure)
 
 
 if __name__ == "__main__":
