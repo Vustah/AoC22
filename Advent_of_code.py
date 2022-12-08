@@ -319,6 +319,50 @@ def print_sizes(structure: dict) -> int:
     return sum_size
 
 
+def check_tree_height(file_content):
+    forrest = []
+    visible_trees = 0
+    for idx, line in enumerate(file_content):
+        forrest.append([])
+        for tree in line:
+            forrest[idx].append(tree)
+    
+
+    visible_trees += 2*(len(forrest))+2*(len(forrest)-2)
+    print(visible_trees)
+    for idx, collumn in enumerate(forrest):
+        if not(idx == 0 or idx == len(forrest) - 1): #don't bother with edges
+            for jdx, tree in enumerate(collumn):
+                if not(jdx == 0 or jdx == len(collumn) - 1): #don't bother with edges
+                    trees_to_check = [[],[],[],[]]
+
+                    for i in range(len(forrest)):
+                        if i<idx:
+                            trees_to_check[0].append(forrest[i][jdx])
+                        elif i>idx:
+                            trees_to_check[1].append(forrest[i][jdx])
+
+                    for j in range(len(collumn)):
+                        if j<jdx:
+                            trees_to_check[2].append(forrest[idx][j])
+                        elif j>jdx:
+                            trees_to_check[3].append(forrest[idx][j])
+
+                    tree_visible = is_visible(tree, trees_to_check[0])
+                    tree_visible = tree_visible or is_visible(tree, trees_to_check[1])
+                    tree_visible = tree_visible or is_visible(tree, trees_to_check[2])
+                    tree_visible = tree_visible or is_visible(tree, trees_to_check[3])
+                    if tree_visible:
+                        visible_trees += 1
+                    
+    print(visible_trees)
+def is_visible(this_tree_height: int, other_trees: list) -> bool:
+    for other_tree_height in other_trees:
+        if other_tree_height >= this_tree_height:
+            return False
+    return True
+
+
 def run1(file_content: list):
     elves = count_calories(file_content)
     find_max(elves)
@@ -349,6 +393,10 @@ def run7(file_content: list):
     print_sizes(structure)
 
 
+def run8(file_content: list):
+    check_tree_height(file_content)
+
+
 if __name__ == "__main__":
     file_content = importFile("input.txt")
-    run7(file_content)
+    run8(file_content)
